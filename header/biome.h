@@ -1,8 +1,8 @@
 #pragma once
 enum biomes{ //list of biomes and their IDs
-    NONE,
-    SURFACE,
-    AIR,
-    UNDERGROUND,
-    PLAINS
+    BIOME_NONE,
+    BIOME_SURFACE,
+    BIOME_AIR,
+    BIOME_UNDERGROUND,
+    BIOME_PLAINS
 };

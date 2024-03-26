@@ -21,10 +21,16 @@ typedef struct {
     int height;
 } chunkArray_t;
 
-int getChunk(chunk_t* chunk, int chunkX, int chunkY);
+typedef struct {
+    chunk_t* chunk;
+    int chunkX;
+    int chunkY;
+} getChunkArgs;
+
+int getChunk(chunk_t* chunk, int chunkX, int chunkY, long long int seed);
 int renderChunk(chunk_t* chunk, Tigr* screen, Tigr* textureAtlas, entity_t* player, int offsetX, int offsetY, entity_t* targetedBlock);
 int renderWorld(entity_t* player, Tigr* screen, Tigr* textureAtlas, chunkArray_t* loadedChunks, entity_t* targetedBlock);
-chunkArray_t* getChunkArray(int chunkXStart, int chunkYStart, int width, int height, chunkArray_t* chunkArray, int generateAll, Tigr* screen);
+chunkArray_t* getChunkArray(int chunkXStart, int chunkYStart, int width, int height, chunkArray_t* chunkArray, int generateAll, Tigr* screen, long long int seed);
 int prosesPlayerBlockStuff(entity_t* player, entity_t* targetedBlock, chunkArray_t* loadedChunks, Tigr* screen);
 int setExplored(entity_t* entity, chunkArray_t* loadedChunks, int amountChunksX, int amountChunksY);
 

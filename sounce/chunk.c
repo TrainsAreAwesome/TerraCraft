@@ -8,16 +8,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h> //for memcpy
+#include <omp.h>
 
-int getChunk(chunk_t* chunk, int chunkX, int chunkY){
+
+
+//gets a chunk from disk, if it doesnt exist it generates it fresh with the given seed
+int getChunk(chunk_t* chunk, int chunkX, int chunkY, long long int seed){
     if(loadChunk(chunk, worldName, chunkX, chunkY)){ //try to load chunk from file. if it doesnt exist then generate it
-        printf("\nIN GETCHUNK WITH CHUNK CORDS %d %d", chunkX, chunkY);
-        generateTerrainSurface(chunkX, chunkY, 12345, chunk);
+        //printf("\nIN GETCHUNK WITH CHUNK CORDS %d %d", chunkX, chunkY);
+        generateChunk(chunk, chunkX, chunkY, seed);
         chunk->x = chunkX;
         chunk->y = chunkY;
     }
     return 0;
 }
+
 
 int moveCArrayX(chunkArray_t* chunkArray){
     for(int x = chunkArray->width; x > 0; --x){
@@ -51,31 +56,47 @@ int getChunkFromChunkArray(int chunkX, int chunkY, chunkArray_t* chunkArray, chu
     return 0;
 }
 
-chunkArray_t* getChunkArray(int chunkXStart, int chunkYStart, int width, int height, chunkArray_t* chunkArray, int generateAll, Tigr* screen){
+//checks if a chunk exists within the given chunk arary
+int isChunkInChunkArray(int chunkX, int chunkY, chunkArray_t* chunkArray){
+    for(int x = 0; x <= chunkArray->width; ++x){
+        for(int y = 0; y <= chunkArray->height; ++y){
+            if(chunkArray->chunkArray[x][y].x == chunkX && chunkArray->chunkArray[x][y].y == chunkY){
+                return 1; //chunk was found
+            }
+        }
+    }
+    return 0; //chunk was not found
+}
+
+chunkArray_t* getChunkArray(int chunkXStart, int chunkYStart, int width, int height, chunkArray_t* chunkArray, int generateAll, Tigr* screen, long long int seed){
     chunkArray->width = (screen->w / 512) + 2;
     chunkArray->height = (screen->h / 512) + 2;
-    chunk_t tempChunk;
     chunkArray_t tempChunkArray;
     tempChunkArray.width = chunkArray->width;
     tempChunkArray.height = chunkArray->height;
 
-    if(generateAll){
-        //printf("\nGenerating all new chunks...");
+    if(generateAll){ //if we dont want to load chunks from memory and want to load them all from disk, or generate them fresh
+        #pragma omp parallel for
         for(int x = chunkXStart; x <= chunkXStart + width; ++x){
+            #pragma omp parallel for
             for(int y = chunkYStart; y <= chunkYStart + height; ++y){
-                getChunk(&tempChunkArray.chunkArray[x - chunkXStart][y - chunkYStart], x, y);
+                getChunk(&tempChunkArray.chunkArray[x - chunkXStart][y - chunkYStart], x, y, seed);
             }
         }
         //printf("\nDone!");
     } else {
+        #pragma omp parallel for
         for(int x = chunkXStart; x <= chunkXStart + width; ++x){
+            #pragma omp parallel for
             for(int y = chunkYStart; y <= chunkYStart + height; ++y){
-                if(getChunkFromChunkArray(x, y, chunkArray, &tempChunk)){
+                if(isChunkInChunkArray(x, y, chunkArray)){
+                    chunk_t tempChunk;
+                    getChunkFromChunkArray(x, y, chunkArray, &tempChunk);
                     memcpy(&tempChunkArray.chunkArray[x - chunkXStart][y - chunkYStart], &tempChunk, sizeof(chunk_t));
                     //printf("\nChunk loaded %d %d (local %d %d) - not generated again\n", x, y, x - chunkXStart, y - chunkYStart);
                 } else {
                     //printf("\nGenerating chunk %d %d (local %d %d)\n", x, y, x - chunkXStart, y - chunkYStart);
-                    getChunk(&tempChunkArray.chunkArray[x - chunkXStart][y - chunkYStart], x, y);
+                    getChunk(&tempChunkArray.chunkArray[x - chunkXStart][y - chunkYStart], x, y, seed);
                 }
             }
         }
@@ -185,7 +206,42 @@ int worldToChunkCords(int* chunkX, int* chunkY, int* xInChunk, int* yInChunk, in
     *yInChunk = y - (*chunkY * 16);
 }
 
+int worldXToChunkCords(int* chunkX, int* xInChunk, int x){
+    int i = x;
+    if(x >= 0 && x < 16){
+        i = 0;
+        goto finishX;
+    }
+    while(abs(i) % 16 != 0){
+        --i;
+    }
+    finishX: *chunkX = i / 16;
+    *xInChunk = x - (*chunkX * 16);
+}
+
+int worldYToChunkCords(int* chunkY, int* yInChunk, int y){
+    int i = y;
+    if(y >= 0 && y < 16){
+        i = 0;
+        goto finishY;
+    }
+    while(abs(i) % 16 != 0){
+        --i;
+    }
+    finishY: *chunkY = i / 16;
+    return 0;
+    *yInChunk = y - (*chunkY * 16);
+}
+
 int chunkToWorldCords(int* x, int* y, int chunkX, int chunkY, int xInChunk, int yInChunk){
     *x = (chunkX * 16) + xInChunk;
+    *y = (chunkY * 16) + yInChunk;
+}
+
+int chunkXToWorldCords(int* x, int chunkX, int xInChunk){
+    *x = (chunkX * 16) + xInChunk;
+}
+
+int chunkYToWorldCords(int* y, int chunkY, int yInChunk){
     *y = (chunkY * 16) + yInChunk;
 }

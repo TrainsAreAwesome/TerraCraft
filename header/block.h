@@ -2,6 +2,14 @@
 #include "tigr.h"
 #include <stdint.h>
 
+enum blocks{
+    AIR,
+    STONE,
+    GRASS,
+    COBBLESTONE,
+    OAK_LOG
+};
+
 typedef struct {
     uint16_t id;
     uint8_t state;

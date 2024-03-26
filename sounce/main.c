@@ -6,6 +6,7 @@
 #include "../header\onScreenText.h"
 #include "../header\saveAndLoad.h"
 #include "../header\generateTerrain.h"
+#include "../header\metadata.h"
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,11 +18,25 @@ int main(){
     printf("Enter a world name to load or create: "); //so the user can select a world
     scanf("%s", &worldName);
     printf("\nLoading world: %s", worldName);
-    //return 0;
+    
 
-    printf("This is the debug menu, I print debug stuff here when I need it (press F3 while in game to have a usfull debug menu like your used to)");
+    metadata_t md;
+    md.playerX = 0;
+    md.playerY = 0;
+    md.playerHealth = 20;
+    if(readMDF(worldName, &md)){ //if we coulnt read the metadata, then make some
+        printf("\nEnter the seed for the world (number): ");
+        scanf("%d", &seed);
+        createWorldFolder(worldName);
+    } else{
+        printf("\nFound world file and loaded metadata");
+        printf("\nHealth: %d", md.playerHealth);
+        seed = md.seed;
+    }
+    printf("\nWorld seed: %d", seed);
     printf("\nworld name: %s", worldName);
-    createWorldFolder(worldName);
+    printf("\nThis is the debug menu, I print debug stuff here when I need it (press F3 while in game to have a usfull debug menu like your used to)");
+
     Tigr* screen = tigrWindow(2560, 1440, "MWGIES TOOLS!!!", 64); //when changing resolution make sure to change wierdX and wierdY
     Tigr* textureAtlas = tigrLoadImage("./textures/textures.png");
     if(!textureAtlas){
@@ -40,15 +55,15 @@ int main(){
 
     Player.chunkX = 0;
     Player.chunkY = 0;
-    Player.health = 0;
-    Player.xInt = 0;
-    Player.yInt = 0;
-    Player.xFloat = 0;
-    Player.yFloat = 0;
-    Player.xBlockInChunk = 0;
-    Player.yBlockInChunk = 0;
-    calculatePixelX(&Player);
-    calculatePixelY(&Player);
+    Player.health = md.playerHealth;
+    Player.xFloat = md.playerX;
+    Player.yFloat = md.playerY;
+    Player.xInt = md.playerX;
+    Player.yInt = md.playerX;
+    moveEntityDown(&Player, 0);
+    moveEntityLeft(&Player, 0);
+    // calculatePixelX(&Player);
+    // calculatePixelY(&Player);
     int oldChunkX = 0;
     int oldChunkY = 0;
     chunk_t exampleChunk;
@@ -62,7 +77,7 @@ int main(){
 
     int F3 = 0;
     clock_t start, end;
-    getChunkArray(Player.chunkX - (amountOfChunksX / 2), Player.chunkY - (amountOfChunksY / 2), amountOfChunksX, amountOfChunksY, &loadedChunks, 1, screen);
+    getChunkArray(Player.chunkX - (amountOfChunksX / 2), Player.chunkY - (amountOfChunksY / 2), amountOfChunksX, amountOfChunksY, &loadedChunks, 1, screen, seed);
     while(!tigrClosed(screen)){
         start = clock();
         tigrClear(screen, tigrRGB(0, 0, 0));
@@ -106,7 +121,7 @@ int main(){
                     }
                 }
             }
-            getChunkArray(Player.chunkX - (amountOfChunksX / 2), Player.chunkY - (amountOfChunksY / 2), amountOfChunksX, amountOfChunksY, &loadedChunks, 0, screen);
+            getChunkArray(Player.chunkX - (amountOfChunksX / 2), Player.chunkY - (amountOfChunksY / 2), amountOfChunksX, amountOfChunksY, &loadedChunks, 0, screen, seed);
         }
 
         entity_t targetedBlock; //works out what block the player is targeting
@@ -121,7 +136,7 @@ int main(){
             F3 = !F3;
         }
         if(F3){ //handles F3 debug menu
-            F3Menu(&Player, screen);
+            F3Menu(&Player, screen, &loadedChunks);
         }
 
         // for(int x = -100; x <= 100; ++x){
@@ -155,6 +170,6 @@ int main(){
             }
         }
     }
-    
+    saveMDF(worldName, seed, &Player);
     printf("\nSaved world, Game closing...");
 }

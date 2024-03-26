@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "chunk.h": "c",
-        "tigr.h": "c"
+        "tigr.h": "c",
+        "metadata.h": "c",
+        "saveandload.h": "c"
     }
 }

@@ -21,6 +21,9 @@ int getTextureAtlasCords(int blockID, int* x, int* y){
     case 4:
         *x = 128; *y = 0;
         break;
+    case 5:
+        *x = 160; *y = 0;
+        break;
     default:
         *x = 96; *y = 32;
         break;

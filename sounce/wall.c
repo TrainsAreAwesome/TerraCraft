@@ -19,6 +19,9 @@ int getTextureAtlasCordsWall(uint16_t wallID, int* x, int* y){
     case 4:
         *x = 128; *y = 0;
         break;
+    case 5:
+        *x = 160; *y = 0;
+        break;
     default:
         *x = 96; *y = 32;
         break;
@@ -28,6 +31,6 @@ int getTextureAtlasCordsWall(uint16_t wallID, int* x, int* y){
 int renderWall(Tigr* screen, Tigr* textureAtlas, wall_t* wall, int x, int y){
     int textureX, textureY;
     getTextureAtlasCordsWall(wall->id, &textureX, &textureY);
-    tigrBlit(screen, textureAtlas, x, y, textureX, textureY, 32, 32);
+    tigrBlitTint(screen, textureAtlas, x, y, textureX, textureY, 32, 32, tigrRGBA(128, 128, 128, 255));
     return 0;
 }

@@ -7,7 +7,8 @@ enum blocks{
     STONE,
     GRASS,
     COBBLESTONE,
-    OAK_LOG
+    OAK_LOG,
+    DIRT
 };
 
 typedef struct {

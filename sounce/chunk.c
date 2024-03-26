@@ -15,7 +15,6 @@
 //gets a chunk from disk, if it doesnt exist it generates it fresh with the given seed
 int getChunk(chunk_t* chunk, int chunkX, int chunkY, long long int seed){
     if(loadChunk(chunk, worldName, chunkX, chunkY)){ //try to load chunk from file. if it doesnt exist then generate it
-        //printf("\nIN GETCHUNK WITH CHUNK CORDS %d %d", chunkX, chunkY);
         generateChunk(chunk, chunkX, chunkY, seed);
         chunk->x = chunkX;
         chunk->y = chunkY;
@@ -23,22 +22,6 @@ int getChunk(chunk_t* chunk, int chunkX, int chunkY, long long int seed){
     return 0;
 }
 
-
-int moveCArrayX(chunkArray_t* chunkArray){
-    for(int x = chunkArray->width; x > 0; --x){
-        for(int y = chunkArray->height; y > 0; --y){
-            chunkArray->chunkArray[x][y] = chunkArray->chunkArray[x - 1][y];
-        }
-    }
-}
-
-int moveCArrayY(chunkArray_t* chunkArray){
-    for(int x = chunkArray->width; x > 0; --x){
-        for(int y = chunkArray->height; y > 0; --y){
-            chunkArray->chunkArray[x][y] = chunkArray->chunkArray[x][y - 1];
-        }
-    }
-}
 
 int getChunkFromChunkArray(int chunkX, int chunkY, chunkArray_t* chunkArray, chunk_t* returnChunk){
     //printf("\nLooking for chunk %d %d", chunkX, chunkY);
@@ -89,10 +72,7 @@ chunkArray_t* getChunkArray(int chunkXStart, int chunkYStart, int width, int hei
         for(int x = chunkXStart; x <= chunkXStart + width; ++x){
             #pragma omp parallel for
             for(int y = chunkYStart; y <= chunkYStart + height; ++y){
-                if(isChunkInChunkArray(x, y, chunkArray)){
-                    chunk_t tempChunk;
-                    getChunkFromChunkArray(x, y, chunkArray, &tempChunk);
-                    memcpy(&tempChunkArray.chunkArray[x - chunkXStart][y - chunkYStart], &tempChunk, sizeof(chunk_t));
+                if(getChunkFromChunkArray(x, y, chunkArray, &tempChunkArray.chunkArray[x - chunkXStart][y - chunkYStart])){
                     //printf("\nChunk loaded %d %d (local %d %d) - not generated again\n", x, y, x - chunkXStart, y - chunkYStart);
                 } else {
                     //printf("\nGenerating chunk %d %d (local %d %d)\n", x, y, x - chunkXStart, y - chunkYStart);
@@ -102,7 +82,7 @@ chunkArray_t* getChunkArray(int chunkXStart, int chunkYStart, int width, int hei
         }
         //printf("\nDone!");
     }
-    memcpy(chunkArray, &tempChunkArray, sizeof(tempChunkArray));
+    memcpy(chunkArray, &tempChunkArray, sizeof(chunkArray_t));
     return chunkArray;
 }
 
@@ -110,14 +90,25 @@ int renderChunk(chunk_t* chunk, Tigr* screen, Tigr* textureAtlas, entity_t* play
     if((offsetX + 512 < 0) || (offsetY + 512 < 0) || (offsetX > screen->w) || (offsetY > screen->h)){
         return 10;
     }
+    #pragma omp parallel for
     for(int y = 0; y < 16; ++y){
+        #pragma omp parallel for
         for(int x = 0; x < 16; ++x){
-            renderBlock(screen, textureAtlas, &chunk->blocks[x][y], offsetX + (x * 32), offsetY + (y * 32));
+            if(!chunk->blocks[x][y].id && chunk->walls[x][y].id){
+                renderWall(screen, textureAtlas, &chunk->walls[x][y], offsetX + (x * 32), offsetY + (y * 32));
+            } else {
+                renderBlock(screen, textureAtlas, &chunk->blocks[x][y], offsetX + (x * 32), offsetY + (y * 32));
+            }
+
+
+            //renderes the player as a missing texture for debugging
             if(chunk->x == player->chunkX && chunk->y == player->chunkY && x == player->xBlockInChunk && y == player->yBlockInChunk){
                 block_t missing;
                 missing.id = 99;
                 renderBlock(screen, textureAtlas, &missing, offsetX + (x * 32), offsetY + (y * 32));
             }
+
+            //renderes the targeted block overlay
             if(chunk->x == targetedBlock->chunkX && chunk->y == targetedBlock->chunkY && x == targetedBlock->xBlockInChunk && y == targetedBlock->yBlockInChunk && targetedBlock->health){
                 tigrBlitAlpha(screen, textureAtlas, offsetX + (x * 32), offsetY + (y * 32), 32, 32, 32, 32, 1);
             }
@@ -133,26 +124,37 @@ int renderWorld(entity_t* player, Tigr* screen, Tigr* textureAtlas, chunkArray_t
     wierdX = 240; //for 1440p: 240 for 1080p: 432
     wierdY = 192; //for 1440p: 192 for 1080p: 12
     //printf("\nwierdX: %lf wierdY: %lf", wierdX, wierdY);
-    int currentXOffset = ((int)wierdX) - player->pixelX - 512; //why does this alogorithm work? even though i made it, i dont know.
-    int currentYOffset = ((int)wierdY - player->pixelY) - 512;
+    int xOffset = ((int)wierdX) - player->pixelX - 512; //why does this alogorithm work? even though i made it, i dont know.
+    int yOffset = ((int)wierdY - player->pixelY) - 512;
 
     //works out which chunks it needs to render, gets them and renders them
-    int loopX = 0;
-    int loopY = 0;
-    for(int currentCY = player->chunkY - (amountOfChunksY / 2); currentCY < player->chunkY + (amountOfChunksY / 2) + 1; ++currentCY){ //extra plus one because it gets lost in truncating
-        loopX = 0; //this is so messy as i redid it to support chunkArrays but it broke when i tried to make it look nicer, so have fun with this mess
-        for(int currentCX = player->chunkX - (amountOfChunksX / 2 ); currentCX < player->chunkX + (amountOfChunksX / 2) + 1; ++currentCX){ //same in this loop
-            //printf("\nAbout to get chunk %d %d from chunk array\nTotal loop iterations: %d", loopX, loopY, amountOfChunksY * amountOfChunksX);
-            chunk_t* chunk = &loadedChunks->chunkArray[loopX][loopY];
-            //printf("\nDone!");
-            renderChunk(chunk, screen, textureAtlas, player, currentXOffset, currentYOffset, targetedBlock);
-            currentXOffset += 512;
-            ++loopX;
+
+    #pragma omp parallel for
+    for(int loopY = 0; loopY < amountOfChunksY + 1; ++loopY){
+        #pragma omp parallel for
+        for(int loopX = 0; loopX < amountOfChunksX + 1; ++loopX){
+            renderChunk(&loadedChunks->chunkArray[loopX][loopY], screen, textureAtlas, player, xOffset + (loopX * 512), yOffset + (loopY * 512), targetedBlock);
         }
-        currentXOffset = ((int)wierdX) - player->pixelX - 512;
-        currentYOffset += 512;
-        ++loopY;
     }
+
+    //just incase we need the old chunk renderer later
+
+    // int loopX = 0;
+    // int loopY = 0;
+    // for(int currentCY = player->chunkY - (amountOfChunksY / 2); currentCY < player->chunkY + (amountOfChunksY / 2) + 1; ++currentCY){ //extra plus one because it gets lost in truncating
+    //     loopX = 0; //this is so messy as i redid it to support chunkArrays but it broke when i tried to make it look nicer, so have fun with this mess
+    //     for(int currentCX = player->chunkX - (amountOfChunksX / 2 ); currentCX < player->chunkX + (amountOfChunksX / 2) + 1; ++currentCX){ //same in this loop
+    //         //printf("\nAbout to get chunk %d %d from chunk array\nTotal loop iterations: %d", loopX, loopY, amountOfChunksY * amountOfChunksX);
+    //         chunk_t* chunk = &loadedChunks->chunkArray[loopX][loopY];
+    //         //printf("\nDone!");
+    //         renderChunk(chunk, screen, textureAtlas, player, currentXOffset, currentYOffset, targetedBlock);
+    //         currentXOffset += 512;
+    //         ++loopX;
+    //     }
+    //     currentXOffset = ((int)wierdX) - player->pixelX - 512;
+    //     currentYOffset += 512;
+    //     ++loopY;
+    // }
 }
 
 
@@ -177,7 +179,6 @@ int prosesPlayerBlockStuff(entity_t* player, entity_t* targetedBlock, chunkArray
 
 int setExplored(entity_t* entity, chunkArray_t* loadedChunks, int amountChunksX, int amountChunksY){
     loadedChunks->chunkArray[amountChunksX / 2][amountChunksY / 2].explored = true;
-    printf("\n acx/2 %d acy/2 %d just set %d %d explored true", amountChunksX / 2, amountChunksY / 2, loadedChunks->chunkArray[amountChunksX / 2][amountChunksY / 2].x, loadedChunks->chunkArray[amountChunksX / 2][amountChunksY / 2].y);
     return 0;
 }
 

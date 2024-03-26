@@ -6,6 +6,8 @@
 #include "../header\chunk.h"
 #include "../header\block.h"
 #include "../header\biome.h"
+#include "../header\entity.h"
+#include "../header\cordinates.h"
 #include <omp.h>
 
 #define MAX_TERRAIN_HEIGHT 1024 //this is the maximum distnace from y=0 the surface height can be (surface height can go either direction, so surface height variance is double this number)
@@ -56,7 +58,7 @@ int generateCaves(int chunkX, int chunkY, chunk_t* chunk, int seed){
         #pragma omp parallel for
         for(int cy = 0; cy < 16; ++cy){
             //printf("\ncave? %f", data[cx][cy]);
-            if(data[cx][cy] < .025 && data[cx][cy] > -.025){ //if the noise is less than .3 but also greater than -.3 then place air
+            if(data[cx][cy] < .025 && data[cx][cy] > -.025 && chunk->blocks[cx][cy].id == STONE){ //if the noise is less than .3 but also greater than -.3 then place air
                 //printf("\njust set chunk %d %d block %d %d to air", chunkX, chunkY, cx, cy);
                 chunk->blocks[cx][cy].id = AIR;
                 chunk->walls[cx][cy].id = STONE;
@@ -66,11 +68,30 @@ int generateCaves(int chunkX, int chunkY, chunk_t* chunk, int seed){
 }
 
 int getTerrainHeight(int x, int seed){
-    printf("\nGetting terrain height for seed %d", seed);
     float noise = getPerlinNoiseSurface(x, seed);
     noise *= MAX_TERRAIN_HEIGHT;
     //printf("\nheight from func = %d", (int)noise);
     return (int)noise;
+}
+
+int placeGrass(chunk_t* chunk, int chunkX, int chunkY, int seed){
+    int blockY, blockX, terrainHeight;
+    chunkToWorldCords(&blockX, &blockY, chunkX, chunkY, 0, 0);
+    for(int x = 0; x < 16; ++x){
+        for(int y = 15; y >= 0; --y){
+            if(chunk->blocks[x][y].id == AIR){
+                continue;
+            }
+            terrainHeight = getTerrainHeight(blockX + x, seed);
+            if(blockY + y == terrainHeight + 1){
+                chunk->blocks[x][y].id = GRASS;
+                chunk->walls[x][y].id = GRASS;
+            } else if((blockY + y - terrainHeight) < 5 && (blockY + y - terrainHeight) > 0){
+                 chunk->blocks[x][y].id = DIRT;
+                 chunk->walls[x][y].id = DIRT;
+            }
+        }
+    }
 }
 
 int generateTerrainSurface(int chunkX, int chunkY, int seed, chunk_t* chunk){ //generates a basic terrain height layer (first step in terrain generation)
@@ -87,8 +108,10 @@ int generateTerrainSurface(int chunkX, int chunkY, int seed, chunk_t* chunk){ //
             for(int cy = 0; cy < 16; ++cy){
                 if((chunkY * 16 + cy) > currentHeight){
                     chunk->blocks[cx][cy].id = STONE;
+                    chunk->walls[cx][cy].id = STONE;
                 } else {
                     chunk->blocks[cx][cy].id = AIR;
+                    chunk->walls[cx][cy].id = AIR;
                 }
             }
         } else if(currentHeightChunkSpace < chunkY){ //if this cord is under the surface
@@ -96,12 +119,14 @@ int generateTerrainSurface(int chunkX, int chunkY, int seed, chunk_t* chunk){ //
             chunk->biome = BIOME_UNDERGROUND; //generic underground biome to reclassify later
             for(int cy = 0; cy < 16; ++cy){
                 chunk->blocks[cx][cy].id = STONE;
+                chunk->walls[cx][cy].id = STONE;
             }
         } else { //if this cord is above the surface
             //printf("\nchunk %d %d is air", chunkX, chunkY);
             chunk->biome = BIOME_AIR; //biome that repersents everything above the surface layer of chunks
             for(int cy = 0; cy < 16; ++cy){
                 chunk->blocks[cx][cy].id = AIR;
+                chunk->walls[cx][cy].id = AIR;
             }
         }
     }
@@ -109,9 +134,9 @@ int generateTerrainSurface(int chunkX, int chunkY, int seed, chunk_t* chunk){ //
 
 //generates a new chunk. takes a pointer to the chunk, the cordinates of the chunk and the world seed
 int generateChunk(chunk_t* chunk, int chunkX, int chunkY, int seed){
-    printf("\nSeed: %d", seed);
     generateTerrainSurface(chunkX, chunkY, seed, chunk);
-    if(chunk->biome == BIOME_SURFACE || chunk->biome == BIOME_UNDERGROUND){
+    if(chunk->biome != BIOME_AIR){
         generateCaves(chunkX, chunkY, chunk, seed);
     }
+    placeGrass(chunk, chunkX, chunkY, seed);
 }

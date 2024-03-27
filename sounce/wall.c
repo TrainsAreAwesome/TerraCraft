@@ -33,6 +33,10 @@ int getTextureAtlasCordsWall(uint16_t wallID, int* x, int* y){
 int renderWall(Tigr* screen, Tigr* textureAtlas, wall_t* wall, int x, int y){
     int textureX, textureY;
     getTextureAtlasCordsWall(wall->id, &textureX, &textureY);
-    customBlitTintNoAlpha(screen, textureAtlas, x, y, textureX, textureY, 32, 32, ((wall->light & RED) >> 12) * 17, ((wall->light & GREEN) >> 8) * 17, ((wall->light & BLUE) >> 4) * 17, 255);
+    if(!wall->light){
+        return 0;
+    } else {
+        customBlitTintNoAlpha(screen, textureAtlas, x, y, textureX, textureY, 32, 32, ((wall->light & RED) >> 12) * 17, ((wall->light & GREEN) >> 8) * 17, ((wall->light & BLUE) >> 4) * 17, 255);
+    }
     return 0;
 }

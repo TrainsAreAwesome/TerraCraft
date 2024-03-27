@@ -181,6 +181,8 @@ void tigrBlit(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int 
 // Clips and blends.
 void tigrBlitAlpha(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, float alpha);
 
+void customBlitTintNoAlpha(Tigr* dst, Tigr* src, int dx, int dy, int sx, int sy, int w, int h, int tintR, int tintG, int tintB, int tintA);
+
 // Same as tigrBlit, but tints the source bitmap with a color
 // and alpha blends the resulting source with the destination.
 //

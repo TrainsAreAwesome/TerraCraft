@@ -33,5 +33,6 @@ int getTextureAtlasCords(int blockID, int* x, int* y){
 int renderBlock(Tigr* screen, Tigr* textureAtlas, block_t* block, int x, int y){
     int textureX, textureY;
     getTextureAtlasCords(block->id, &textureX, &textureY);
-    tigrBlit(screen, textureAtlas, x, y, textureX, textureY, 32, 32);
+    customBlitTintNoAlpha(screen, textureAtlas, x, y, textureX, textureY, 32, 32, (block->light & RED >> 12) * 17, (block->light & GREEN >> 8) * 17, (block->light & BLUE >> 4) * 17, 255);
+    //tigrBlit(screen, textureAtlas, x, y, textureX, textureY, 32, 32);
 }

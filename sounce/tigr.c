@@ -635,7 +635,38 @@ void tigrBlitTint(Tigr* dst, Tigr* src, int dx, int dy, int sx, int sy, int w, i
         ts += st;
         td += dt;
     } while (--h);
+    
 }
+
+//my custom tinting alogorithm (def not stole from above noooooo *definatly* not)
+void customBlitTintNoAlpha(Tigr* dst, Tigr* src, int dx, int dy, int sx, int sy, int w, int h, int tintR, int tintG, int tintB, int tintA){
+    int cw = dst->cw >= 0 ? dst->cw : dst->w;
+    int ch = dst->ch >= 0 ? dst->ch : dst->h;
+    CLIP();
+
+    int xr = EXPAND(tintR);
+    int xg = EXPAND(tintG);
+    int xb = EXPAND(tintB);
+    int xa = 256;
+
+    int st = src->w;
+    int dt = dst->w;
+
+    TPixel* ots = &src->pix[sy * src->w + sx];
+    TPixel* otd = &dst->pix[dy * dst->w + dx];
+
+    for(int y = 0; y < h; ++y){
+        TPixel* ts = ots + (st * y);
+        TPixel* td = otd + (dt * y);
+        for(int x = 0; x < w; x++){
+            td[x].r = (unsigned char)((double)ts[x].r / 256 * xr);
+            td[x].g = (unsigned char)((double)ts[x].g / 256 * xg);
+            td[x].b = (unsigned char)((double)ts[x].b / 256 * xb);
+            td[x].a = (unsigned char)(xa);
+        }
+    }
+}
+
 
 void tigrBlitAlpha(Tigr* dst, Tigr* src, int dx, int dy, int sx, int sy, int w, int h, float alpha) {
     alpha = (alpha < 0) ? 0 : (alpha > 1 ? 1 : alpha);

@@ -92,7 +92,6 @@ int renderChunk(chunk_t* chunk, Tigr* screen, Tigr* textureAtlas, entity_t* play
     }
     #pragma omp parallel for
     for(int y = 0; y < 16; ++y){
-        #pragma omp parallel for
         for(int x = 0; x < 16; ++x){
             if(!chunk->blocks[x][y].id && chunk->walls[x][y].id){
                 renderWall(screen, textureAtlas, &chunk->walls[x][y], offsetX + (x * 32), offsetY + (y * 32));
@@ -105,6 +104,7 @@ int renderChunk(chunk_t* chunk, Tigr* screen, Tigr* textureAtlas, entity_t* play
             if(chunk->x == player->chunkX && chunk->y == player->chunkY && x == player->xBlockInChunk && y == player->yBlockInChunk){
                 block_t missing;
                 missing.id = 99;
+                missing.light = 0b1111111111111111;
                 renderBlock(screen, textureAtlas, &missing, offsetX + (x * 32), offsetY + (y * 32));
             }
 
@@ -129,9 +129,9 @@ int renderWorld(entity_t* player, Tigr* screen, Tigr* textureAtlas, chunkArray_t
 
     //works out which chunks it needs to render, gets them and renders them
 
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(int loopY = 0; loopY < amountOfChunksY + 1; ++loopY){
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for(int loopX = 0; loopX < amountOfChunksX + 1; ++loopX){
             renderChunk(&loadedChunks->chunkArray[loopX][loopY], screen, textureAtlas, player, xOffset + (loopX * 512), yOffset + (loopY * 512), targetedBlock);
         }

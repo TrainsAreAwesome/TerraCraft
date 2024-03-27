@@ -55,7 +55,6 @@ int generateCaves(int chunkX, int chunkY, chunk_t* chunk, int seed){
     getPerlinNoiseCave(x, y, seed, data);
     #pragma omp parallel for
     for(int cx = 0; cx < 16; ++cx){
-        #pragma omp parallel for
         for(int cy = 0; cy < 16; ++cy){
             //printf("\ncave? %f", data[cx][cy]);
             if(data[cx][cy] < .025 && data[cx][cy] > -.025 && chunk->blocks[cx][cy].id == STONE){ //if the noise is less than .3 but also greater than -.3 then place air
@@ -77,18 +76,29 @@ int getTerrainHeight(int x, int seed){
 int placeGrass(chunk_t* chunk, int chunkX, int chunkY, int seed){
     int blockY, blockX, terrainHeight;
     chunkToWorldCords(&blockX, &blockY, chunkX, chunkY, 0, 0);
+    #pragma omp parallel for
     for(int x = 0; x < 16; ++x){
         for(int y = 15; y >= 0; --y){
             if(chunk->blocks[x][y].id == AIR){
+                if(chunk->walls[x][y].id != AIR){
+                    terrainHeight = getTerrainHeight(blockX + x, seed);
+                    if(blockY + y == terrainHeight + 1){
+                        chunk->walls[x][y].id = GRASS;
+                    } else if((blockY + y - terrainHeight) < 5 && (blockY + y - terrainHeight) > 0){
+                        chunk->walls[x][y].id = DIRT;
+                    }
+                }
                 continue;
             }
             terrainHeight = getTerrainHeight(blockX + x, seed);
             if(blockY + y == terrainHeight + 1){
                 chunk->blocks[x][y].id = GRASS;
                 chunk->walls[x][y].id = GRASS;
+
             } else if((blockY + y - terrainHeight) < 5 && (blockY + y - terrainHeight) > 0){
-                 chunk->blocks[x][y].id = DIRT;
-                 chunk->walls[x][y].id = DIRT;
+                chunk->blocks[x][y].id = DIRT;
+                chunk->walls[x][y].id = DIRT;
+
             }
         }
     }
@@ -109,7 +119,13 @@ int generateTerrainSurface(int chunkX, int chunkY, int seed, chunk_t* chunk){ //
                 if((chunkY * 16 + cy) > currentHeight){
                     chunk->blocks[cx][cy].id = STONE;
                     chunk->walls[cx][cy].id = STONE;
+
+                    chunk->blocks[cx][cy].light = 0b1111111111111111;
+                    chunk->walls[cx][cy].light = 0b0111011101110111;
                 } else {
+                    chunk->blocks[cx][cy].light = 0b1111111111111111;
+                    chunk->walls[cx][cy].light = 0b1111111111111111;
+                    
                     chunk->blocks[cx][cy].id = AIR;
                     chunk->walls[cx][cy].id = AIR;
                 }
@@ -120,6 +136,9 @@ int generateTerrainSurface(int chunkX, int chunkY, int seed, chunk_t* chunk){ //
             for(int cy = 0; cy < 16; ++cy){
                 chunk->blocks[cx][cy].id = STONE;
                 chunk->walls[cx][cy].id = STONE;
+
+                chunk->blocks[cx][cy].light = 0b1111111111111111;
+                chunk->walls[cx][cy].light = 0b0111011101110111;
             }
         } else { //if this cord is above the surface
             //printf("\nchunk %d %d is air", chunkX, chunkY);
@@ -127,6 +146,9 @@ int generateTerrainSurface(int chunkX, int chunkY, int seed, chunk_t* chunk){ //
             for(int cy = 0; cy < 16; ++cy){
                 chunk->blocks[cx][cy].id = AIR;
                 chunk->walls[cx][cy].id = AIR;
+
+                chunk->blocks[cx][cy].light = 0b1111111111111111;
+                chunk->walls[cx][cy].light = 0b1111111111111111;
             }
         }
     }

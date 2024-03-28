@@ -217,8 +217,8 @@ int worldToChunkCords(int* chunkX, int* chunkY, int* xInChunk, int* yInChunk, in
         --i;
     }
     finishY: *chunkY = i / 16;
-    return 0;
     *yInChunk = y - (*chunkY * 16);
+    return 0;
 }
 
 int worldXToChunkCords(int* chunkX, int* xInChunk, int x){

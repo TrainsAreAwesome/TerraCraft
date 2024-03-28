@@ -3,6 +3,7 @@
 #include "../header\block.h"
 #include "../header\wall.h"
 #include "../header\cordinates.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <omp.h>
 
@@ -69,6 +70,112 @@ int calculateSunLighting(chunkArray_t* loadedChunks){
                     }
                 }
             }
+        }
+    }
+}
+
+int calculateLightFromSource(block_t* lightSourceBlock, chunkArray_t* loadedChunks, int x, int y, int chunkArrayX, int chunkArrayY, int xInChunk, int yInChunk){ //runs for every light source
+    int lightRange = lightSourceBlock->light & 0b1111;
+    #pragma omp parallel for
+    for(int offsetX = -lightRange; offsetX <= lightRange; ++offsetX){
+        for(int offsetY = -lightRange; offsetY <= lightRange; ++offsetY){
+            if((offsetX == 0 && offsetY == 0) || (abs(offsetX) + abs(offsetY)) > lightRange){
+                continue;
+            }
+            int tempChunkX, tempChunkY, tempXInChunk, tempYInChunk, tempChunkArrayX, tempChunkArrayY;
+            uint16_t currentLight = 0, currentWallLight = 0;
+            uint8_t r, g, b, nr = 0, ng = 0, nb = 0, wr = 0, wg = 0, wb = 0;
+            r = ((lightSourceBlock->light & RED) >> 12);
+            g = ((lightSourceBlock->light & GREEN) >> 8);
+            b = ((lightSourceBlock->light & BLUE) >> 4);
+            
+
+            if(r > (abs(offsetX) + abs(offsetY)) && lightRange > (abs(offsetX) + abs(offsetY))){
+                //currentLight |= ((r - (abs(offsetX) + abs(offsetY)) & 0b1111) << 12);
+                nr = (r - (abs(offsetX) + abs(offsetY)) & 0b1111);
+            }
+            if(g > (abs(offsetX) + abs(offsetY)) && lightRange > (abs(offsetX) + abs(offsetY))){
+                //currentLight |= ((g - (abs(offsetX) + abs(offsetY)) & 0b1111) << 8);
+                ng = (g - (abs(offsetX) + abs(offsetY)) & 0b1111);
+            }
+            if(b > (abs(offsetX) + abs(offsetY)) && lightRange > (abs(offsetX) + abs(offsetY))){
+                //currentLight |= ((b - (abs(offsetX) + abs(offsetY)) & 0b1111) << 4);
+                nb = (b - (abs(offsetX) + abs(offsetY)) & 0b1111);
+            }
+            worldToChunkCords(&tempChunkX, &tempChunkY, &tempXInChunk, &tempYInChunk, x + offsetX, y + offsetY);
+            getChunkArrayCords(tempChunkX, tempChunkY, loadedChunks, &tempChunkArrayX, &tempChunkArrayY);
+            //loadedChunks->chunkArray[tempChunkArrayX][tempChunkArrayY].blocks[tempXInChunk][tempYInChunk].light |= currentLight;
+
+            uint8_t sr, sg, sb, wsr, wsg, wsb, fbr, fbg, fbb;
+            sr = (loadedChunks->chunkArray[tempChunkArrayX][tempChunkArrayY].blocks[tempXInChunk][tempYInChunk].light & RED) >> 12;
+            sg = (loadedChunks->chunkArray[tempChunkArrayX][tempChunkArrayY].blocks[tempXInChunk][tempYInChunk].light & GREEN) >> 8;
+            sb = (loadedChunks->chunkArray[tempChunkArrayX][tempChunkArrayY].blocks[tempXInChunk][tempYInChunk].light & BLUE) >> 4;
+            wsr = (loadedChunks->chunkArray[tempChunkArrayX][tempChunkArrayY].walls[tempXInChunk][tempYInChunk].light & RED) >> 12;
+            wsg = (loadedChunks->chunkArray[tempChunkArrayX][tempChunkArrayY].walls[tempXInChunk][tempYInChunk].light & GREEN) >> 8;
+            wsb = (loadedChunks->chunkArray[tempChunkArrayX][tempChunkArrayY].walls[tempXInChunk][tempYInChunk].light & BLUE) >> 4;
+
+            if((sr + nr) > 15){
+                fbr = 15;
+            } else{
+                fbr = sr + nr;
+            }
+
+            if((sg + ng) > 15){
+                fbg = 15;
+            } else{
+                fbg = sg + ng;
+            }
+
+            if((sb + nb) > 15){
+                fbb = 15;
+            } else{
+                fbb = sb + nb;
+            }
+
+            currentLight |= (fbr << 12);
+            currentLight |= (fbg << 8);
+            currentLight |= (fbb << 4);
+            loadedChunks->chunkArray[tempChunkArrayX][tempChunkArrayY].blocks[tempXInChunk][tempYInChunk].light = currentLight;
+
+            if(nr < 5){
+                wr = 0;
+            } else {
+                wr = nr - 5;
+            }
+            if(ng < 5){
+                wg = 0;
+            } else {
+                wg = ng - 5;
+            }
+            if(nb < 5){
+                wb = 0;
+            } else {
+                wb = nb - 5;
+            }
+
+            if((wr + wsr) > 10){
+                wr = 10;
+            } else {
+                wr += wsr;
+            }
+            if((wg + wsg) > 10){
+                wg = 10;
+            } else {
+                wg += wsg;
+            }
+            if((wb + wsb) > 10){
+                wb = 10;
+            } else {
+                wb += wsb;
+            }
+
+            currentWallLight |= (wr << 12);
+            currentWallLight |= (wg << 8);
+            currentWallLight |= (wb << 4);
+
+            loadedChunks->chunkArray[tempChunkArrayX][tempChunkArrayY].walls[tempXInChunk][tempYInChunk].light = currentWallLight;
+
+
         }
     }
 }

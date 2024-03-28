@@ -28,14 +28,16 @@ int calculateSunLighting(chunkArray_t* loadedChunks){
                         g = (currentLight & 0b111100000000) >> 8;
                         b = (currentLight & 0b11110000) >> 4;
                         if(loadedChunks->chunkArray[xChunk][yChunk].blocks[cxBlock][cyBlock].id != AIR || loadedChunks->chunkArray[xChunk][yChunk].walls[cxBlock][cyBlock].id != AIR){
-                            if(r != 0){
-                                --r; 
-                            }
-                            if(g != 0){
-                                --g;
-                            }
-                            if(b != 0){
-                                --b;
+                            if(loadedChunks->chunkArray[xChunk][yChunk].blocks[cxBlock][cyBlock].id != AIR){
+                                if(r != 0){
+                                    --r; 
+                                }
+                                if(g != 0){
+                                    --g;
+                                }
+                                if(b != 0){
+                                    --b;
+                                }
                             }
                             wr = r; wg = g; wb = b;
                             currentLight = ((r & 0b1111)<< 12) | ((g & 0b1111) << 8) | ((b & 0b1111) << 4);

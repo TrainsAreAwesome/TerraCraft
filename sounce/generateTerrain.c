@@ -120,8 +120,8 @@ int generateTerrainSurface(int chunkX, int chunkY, int seed, chunk_t* chunk){ //
                     chunk->blocks[cx][cy].id = STONE;
                     chunk->walls[cx][cy].id = STONE;
 
-                    chunk->blocks[cx][cy].light = 0b1111111111111111;
-                    chunk->walls[cx][cy].light = 0b0111011101110111;
+                    chunk->blocks[cx][cy].light = 0;
+                    chunk->walls[cx][cy].light = 0;
                 } else {
                     chunk->blocks[cx][cy].light = 0b1111111111111111;
                     chunk->walls[cx][cy].light = 0b1111111111111111;
@@ -137,8 +137,8 @@ int generateTerrainSurface(int chunkX, int chunkY, int seed, chunk_t* chunk){ //
                 chunk->blocks[cx][cy].id = STONE;
                 chunk->walls[cx][cy].id = STONE;
 
-                chunk->blocks[cx][cy].light = 0b1111111111111111;
-                chunk->walls[cx][cy].light = 0b0111011101110111;
+                chunk->blocks[cx][cy].light = 0;
+                chunk->walls[cx][cy].light = 0;
             }
         } else { //if this cord is above the surface
             //printf("\nchunk %d %d is air", chunkX, chunkY);

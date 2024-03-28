@@ -51,6 +51,20 @@ int isChunkInChunkArray(int chunkX, int chunkY, chunkArray_t* chunkArray){
     return 0; //chunk was not found
 }
 
+//converts global chunk cords to chunk array cords
+int getChunkArrayCords(int chunkX, int chunkY, chunkArray_t* chunkArray, int* chunkArrayX, int* chunkArrayY){
+    for(int x = 0; x <= chunkArray->width; ++x){
+        for(int y = 0; y <= chunkArray->height; ++y){
+            if(chunkArray->chunkArray[x][y].x == chunkX && chunkArray->chunkArray[x][y].y == chunkY){
+                *chunkArrayX = x;
+                *chunkArrayY = y;
+                return 1; //chunk was found
+            }
+        }
+    }
+    return 0; //chunk was not found
+}
+
 chunkArray_t* getChunkArray(int chunkXStart, int chunkYStart, int width, int height, chunkArray_t* chunkArray, int generateAll, Tigr* screen, long long int seed){
     chunkArray->width = (screen->w / 512) + 2;
     chunkArray->height = (screen->h / 512) + 2;

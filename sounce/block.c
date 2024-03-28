@@ -38,7 +38,7 @@ int renderBlock(Tigr* screen, Tigr* textureAtlas, block_t* block, int x, int y){
     } else if((block->light & 0b1111111111110000) == 0b1111111111110000){ //if the block is completly bright, we can just copy the texture
         tigrBlit(screen, textureAtlas, x, y, textureX, textureY, 32, 32);
     } else { //otherwise use the slower renderer that supports tints
-        customBlitTintNoAlpha(screen, textureAtlas, x, y, textureX, textureY, 32, 32, (block->light & RED >> 12) * 17, (block->light & GREEN >> 8) * 17, (block->light & BLUE >> 4) * 17, 255);
+        customBlitTintNoAlpha(screen, textureAtlas, x, y, textureX, textureY, 32, 32, ((block->light & RED) >> 12) * 17, ((block->light & GREEN) >> 8) * 17, ((block->light & BLUE) >> 4) * 17, 255);
     }
     return 0;
 }

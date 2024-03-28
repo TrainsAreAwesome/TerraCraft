@@ -7,6 +7,7 @@
 #include "../header\saveAndLoad.h"
 #include "../header\generateTerrain.h"
 #include "../header\metadata.h"
+#include "../header\lighting.h"
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,6 +79,7 @@ int main(){
     int F3 = 0;
     clock_t start, end;
     getChunkArray(Player.chunkX - (amountOfChunksX / 2), Player.chunkY - (amountOfChunksY / 2), amountOfChunksX, amountOfChunksY, &loadedChunks, 1, screen, seed);
+    calculateSunLighting(&loadedChunks);
     while(!tigrClosed(screen)){
         start = clock();
         tigrClear(screen, tigrRGB(0, 0, 0));
@@ -122,12 +124,14 @@ int main(){
                 }
             }
             getChunkArray(Player.chunkX - (amountOfChunksX / 2), Player.chunkY - (amountOfChunksY / 2), amountOfChunksX, amountOfChunksY, &loadedChunks, 0, screen, seed);
+            calculateSunLighting(&loadedChunks);
         }
 
         entity_t targetedBlock; //works out what block the player is targeting
         getTargetedBlock(&Player, screen, &targetedBlock);
 
         prosesPlayerBlockStuff(&Player, &targetedBlock, &loadedChunks, screen); //handles block breaking placing etc
+        calculateSunLighting(&loadedChunks);
         renderWorld(&Player, screen, textureAtlas, &loadedChunks, &targetedBlock);
 
         renderBlock(screen, textureAtlas, &exampleGrassBlock, (screen->w / 2) - 16, (screen->h / 2) - 16); //renderes a grass block centered at the centre of the window

@@ -33,5 +33,8 @@ int renderWorld(entity_t* player, Tigr* screen, Tigr* textureAtlas, chunkArray_t
 chunkArray_t* getChunkArray(int chunkXStart, int chunkYStart, int width, int height, chunkArray_t* chunkArray, int generateAll, Tigr* screen, long long int seed);
 int prosesPlayerBlockStuff(entity_t* player, entity_t* targetedBlock, chunkArray_t* loadedChunks, Tigr* screen);
 int setExplored(entity_t* entity, chunkArray_t* loadedChunks, int amountChunksX, int amountChunksY);
+int isChunkInChunkArray(int chunkX, int chunkY, chunkArray_t* chunkArray);
+int getChunkArrayCords(int chunkX, int chunkY, chunkArray_t* chunkArray, int* chunkArrayX, int* chunkArrayY);
+int getChunkFromChunkArray(int chunkX, int chunkY, chunkArray_t* chunkArray, chunk_t* returnChunk);
 
 extern char worldName[51];
